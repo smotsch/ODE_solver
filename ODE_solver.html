@@ -1,0 +1,158 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>body{
+	background:black;
+	color:white;
+	font:40px bold sans-serif;
+	margin:0px;
+	overflow:hidden;
+}</style>
+<body>
+<script>
+var qobj = {};
+window.location.search.slice(1).split("&").forEach(function (qstr) {
+	var a = qstr.split("=");
+	qobj[a[0]] = a[1].toLowerCase();
+});
+var xformula = qobj.xprime || "1";
+var yformula = qobj.yprime || "1";
+document.title = "x' = " + xformula + " : y' = " + yformula;
+// export the Math functions
+"sin cos tan log exp abs pow min max PI".split(" ").forEach(function (f) {
+	window[f] = Math[f];
+});
+try {
+	var x = 0, y = 0;
+	eval(xformula);
+	eval(yformula);
+} catch (e) {
+	document.body.innerHTML = "Error with formula: " + e;
+}
+var height = window.innerHeight;
+var width =  window.innerWidth;
+var canvas = document.createElement('canvas');
+var blobArray = [];
+var mouse = {x: 0, y: 0};
+canvas.mouseIsOver = false;
+   canvas.onmouseover = function()   {
+      this.mouseIsOver = true;
+   };
+   canvas.onmouseout = function()   {
+      this.mouseIsOver = false;
+   }
+document.body.appendChild(canvas);
+var width = canvas.width = width,
+	height = canvas.height = height,
+	c = canvas.getContext('2d');
+function randomRange(min, max){
+	return Math.random()*(max-min) + min;
+}
+function setupNew(){
+	formula = document.getElementById("formulabox").value
+	c.fillStyle = 'black';
+	c.fillRect(0,0,width,height);
+	blobArray = [];
+	c.fillStyle = 'white';
+	c.fillRect(width/2-1,0,1,height);
+	c.fillRect(0,height/2-1,width,1);
+}
+document.addEventListener('mousemove', function(e){ 
+    mouse.x = e.clientX || e.pageX; 
+    mouse.y = e.clientY || e.pageY 
+}, false);var mouseDown = 0;
+document.body.onmousedown = function() { 
+  mouseDown=true;
+}
+document.body.onmouseup = function() {
+  mouseDown=false;
+}
+c.fillStyle = 'black';
+c.fillRect(0,0,width,height);
+c.fillStyle = 'white';
+c.fillRect(width/2-1,0,1,height);
+c.fillRect(0,height/2-1,width,1);
+var divWidth = width/10;
+var divHeight = height/10;
+function draw(){
+
+	if(mouseDown){
+		var color = getColor();
+		var blob = {x : mouse.x-20,
+				y : mouse.y-20,
+				xSpeed : 0,
+				ySpeed : 0,
+				size : 5,
+				lastPos : [],
+				color : color,
+			};
+		blobArray.push(blob);
+	}
+	//c.clearRect(0,0,width,height);
+	var length = blobArray.length;
+	dt = .02;
+	// by defaut x ∈ [-10,10], y ∈ [-5,5] 
+	for(var i = 0; i < length; i++){
+		blob = blobArray[i];
+		drawCircle(blob.x,blob.y,blob.size, blob.color);
+
+		//------------------------------------------
+		// Kunge-Kutta method
+		x =  (blob.x-width/2)/(divWidth/2);
+ 		y = -(blob.y-height/2)/(divHeight);
+		// the slopes
+		k0_x = getSlopeX(x,y);
+		k0_y = getSlopeY(x,y);
+		k1_x = getSlopeX(x+k0_x*dt/2,y+k0_y*dt/2);
+		k1_y = getSlopeY(x+k0_x*dt/2,y+k0_y*dt/2);
+		k2_x = getSlopeX(x+k1_x*dt/2,y+k1_y*dt/2);
+		k2_y = getSlopeY(x+k1_x*dt/2,y+k1_y*dt/2);
+		k3_x = getSlopeX(x+k2_x*dt  ,y+k2_y*dt);
+		k3_y = getSlopeY(x+k2_x*dt  ,y+k2_y*dt);
+		// new position
+		x_new = x + (k0_x + 2*k1_x + 2*k2_x + k3_x)/6*dt;
+ 		y_new = y + (k0_y + 2*k1_y + 2*k2_y + k3_y)/6*dt;
+		// Update
+		blob.x = width/2  + divWidth/2*x_new;
+		blob.y = height/2 - divHeight*y_new;
+		//------------------------------------------
+		
+		if(blob.x < -500 || blob.y < -500 || blob.x > width+500 || blob.y > height+500){
+			blobArray.splice(i,1);
+		}
+	}
+}
+
+function drawCircle(centerX, centerY, diameter,color){
+	c.beginPath();
+    c.arc(centerX, centerY, diameter/2, 0, 2 * Math.PI, false);
+    c.fillStyle = color;
+    c.fill();
+    c.lineWidth = 0;
+   // c.strokeStyle = color;
+    //c.stroke();
+}
+
+function getColor(){
+	switch(Math.floor(Math.random() * 9) + 1){
+	case 1: return 'aqua';
+	case 2: return 'blue';
+	case 3: return 'fuchsia';
+	case 4: return 'green';
+	case 5: return 'lime';
+	case 6: return 'maroon';
+	case 7: return 'olive';
+	case 8: return 'orange';
+	case 9: return 'purple';
+	}
+}
+
+function getSlopeY(x, y){
+	return eval(yformula);
+}
+	
+function getSlopeX(x,y){
+	return eval(xformula);
+}
+setInterval(draw,30);
+
+</script>
